@@ -11,19 +11,10 @@
 
 source common-libs/functions.sh
 
-function sigfunc() {
-    tmux kill-session -t stress 2>/dev/null
-    if [ "${DISABLE_CPU_BALANCE:-n}" == "y" ]; then
-        enable_balance
-    fi
-    exit 0
-}
-
 echo "############# dumping env ###########"
 env
 echo "#####################################"
 
-echo " "
 echo "########## container info ###########"
 echo "/proc/cmdline:"
 cat /proc/cmdline
@@ -38,16 +29,8 @@ if [[ -z "${INTERVAL}" ]]; then
     INTERVAL="1000"
 fi
 
-if [[ -z "${stress}" ]]; then
-    stress="false"
-elif [[ "${stress}" != "stress-ng" && "${stress}" != "true" ]]; then
-    stress="false"
-else
-    stress="true"
-fi
-
 if [[ -z "${rt_priority}" ]]; then
-        rt_priority=1
+    rt_priority=1
 elif [[ "${rt_priority}" =~ ^[0-9]+$ ]]; then
     if (( rt_priority > 99 )); then
         rt_priority=99
@@ -58,12 +41,13 @@ fi
 
 release=$(cat /etc/os-release | sed -n -r 's/VERSION_ID="(.).*/\1/p')
 
-for cmd in tmux cyclictest; do
+for cmd in cyclictest; do
     command -v $cmd >/dev/null 2>&1 || { echo >&2 "$cmd required but not installed. Aborting"; exit 1; }
 done
 
-cpulist=`get_allowed_cpuset`
-echo "allowed cpu list: ${cpulist}"
+# --------------------------------------------
+cpulist=`get_isolated_cpuset`
+echo "isolated cpu list: ${cpulist}"
 
 uname=`uname -nr`
 echo "$uname"
@@ -77,16 +61,7 @@ if [ "${DISABLE_CPU_BALANCE:-n}" == "y" ]; then
     disable_balance
 fi
 
-trap sigfunc TERM INT SIGUSR1
-
-# stress run in each tmux window per cpu
-if [[ "$stress" == "true" ]]; then
-    yum install -y stress-ng 2>&1 || { echo >&2 "stress-ng required but install failed. Aborting"; sleep infinity; }
-    tmux new-session -s stress -d
-    for w in $(seq 1 ${#cpus[@]}); do
-        tmux new-window -t stress -n $w "taskset -c ${cpus[$(($w-1))]} stress-ng --cpu 1 --cpu-load 100 --cpu-method loop"
-    done
-fi
+trap TERM INT SIGUSR1
 
 cyccore=${cpus[1]}
 cindex=2
@@ -104,10 +79,6 @@ if [[ "${sibling}" =~ ^[0-9]+$ ]]; then
     ccount=$(($ccount - 1))
 fi
 echo "new cpu list: ${cyccore}"
-
-if [[ "$release" = "7" ]]; then
-    extra_opt="${extra_opt} -n"
-fi
 
 if [[ -n "${TRACE_THRESHOLD}" ]]; then
     extra_opt="${extra_opt} -b ${TRACE_THRESHOLD} --tracemark"
@@ -128,10 +99,6 @@ fi
 
 sleep infinity
 
-# kill stress before exit 
-tmux kill-session -t stress 2>/dev/null
-
 if [ "${DISABLE_CPU_BALANCE:-n}" == "y" ]; then
     enable_balance
 fi
-

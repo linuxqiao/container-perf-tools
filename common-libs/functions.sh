@@ -23,6 +23,12 @@ function get_allowed_cpuset() {
 }
 
 
+function get_isolated_cpuset() {
+	local cpuset=`cat /sys/devices/system/cpu/isolated`
+	echo ${cpuset}
+}
+
+
 function disable_balance()
 {
 	local cpu=""

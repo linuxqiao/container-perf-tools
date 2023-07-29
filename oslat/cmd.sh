@@ -41,8 +41,8 @@ echo "#####################################"
 
 PRIO=${PRIO:-1}
 
-cpulist=`get_allowed_cpuset`
-echo "allowed cpu list: ${cpulist}"
+cpulist=`get_isolated_cpuset`
+echo "isolated cpu list: ${cpulist}"
 
 uname=`uname -nr`
 echo "$uname"
@@ -67,19 +67,19 @@ ccount=1
 while (( $cindex < ${#cpus[@]} )); do
 	cyccore="${cyccore},${cpus[$cindex]}"
 	cindex=$(($cindex + 1))
-        ccount=$(($ccount + 1))
+    ccount=$(($ccount + 1))
 done
 
 sibling=`cat /sys/devices/system/cpu/cpu${cpus[0]}/topology/thread_siblings_list | awk -F '[-,]' '{print $2}'`
 if [[ "${sibling}" =~ ^[0-9]+$ ]]; then
-        echo "removing cpu${sibling} from the cpu list because it is a sibling of cpu${cpus[0]} which will be the cpu-main-thread"
-        cyccore=${cyccore//,$sibling/}
+    echo "removing cpu${sibling} from the cpu list because it is a sibling of cpu${cpus[0]} which will be the cpu-main-thread"
+    cyccore=${cyccore//,$sibling/}
 fi
 echo "new cpu list: ${cyccore}"
 
 extra_args=""
 if [ -n "$TRACE_THRESHOLD" ]; then
-        extra_args="--trace-threshold=$TRACE_THRESHOLD"
+    extra_args="--trace-threshold=$TRACE_THRESHOLD"
 fi
 
 command="oslat -D ${RUNTIME_SECONDS} --rtprio ${PRIO} --cpu-list ${cyccore} --cpu-main-thread ${cpus[0]} ${extra_args}"
