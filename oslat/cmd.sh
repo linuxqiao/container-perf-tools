@@ -11,6 +11,15 @@
 
 source common-libs/functions.sh
 
+echo "############# dumping env ###########"
+env
+echo "#####################################"
+
+echo "########## container info ###########"
+echo "/proc/cmdline:"
+cat /proc/cmdline
+echo "#####################################"
+
 function sigfunc() {
 	if [ "${DISABLE_CPU_BALANCE:-n}" == "y" ]; then
 		enable_balance
@@ -27,17 +36,6 @@ if [ "${run_hwlatdetect}" == "y" ]; then
 	hwlatdetect --duration=${RUNTIME_SECONDS} --watch
 	sleep infinity
 fi
-
-echo "############# dumping env ###########"
-env
-echo "#####################################"
-
-echo " "
-echo "########## container info ###########"
-echo "/proc/cmdline:"
-cat /proc/cmdline
-echo "#####################################"
-
 
 PRIO=${PRIO:-1}
 
