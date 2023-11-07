@@ -61,13 +61,17 @@ if [[ "${sibling}" =~ ^[0-9]+$ ]]; then
 fi
 echo "new cpu list: ${cyccore}"
 
-command="rtla timerlat hist --auto ${AUTO_TRACE} --cpus ${cyccore} -e sched:sched_switch -e sched:sched_wakeup -e sched:sched_migrate_task -e irq -e irq_vectors -e timer -e workqueue"
+command="rtla timerlat hist --auto ${AUTO_TRACE} --cpus ${cyccore} -e sched:sched_switch -e sched:sched_wakeup -e sched:sched_migrate_task -e irq -e irq_vectors -e timer -e workqueue --duration ${RUNTIME_SECONDS}"
 
 echo "running cmd: ${command}"
 if [ "${manual:-n}" == "n" ]; then
     $command
 else
     sleep infinity
+fi
+
+if [ -f timerlat_trace.txt ]; then
+    cat timerlat_trace.txt
 fi
 
 sleep infinity
